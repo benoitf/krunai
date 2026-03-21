@@ -90,6 +90,15 @@ pub fn generate_startup_script(
             if vol.read_only { " (ro)" } else { "" }
         ));
         volume_commands.push_str(&format!("\nmkdir -p {}", vol.guest_path));
+        // Fix ownership of intermediate directories created under /home/agent/
+        // (e.g. mkdir -p /home/agent/.config/gcloud creates .config as root,
+        // which breaks tools like podman that require ~/.config to be user-owned)
+        if vol.guest_path.starts_with("/home/agent/") {
+            volume_commands.push_str(&format!(
+                "\n_dir=\"$(dirname {})\" ; while [ \"$_dir\" != \"/home/agent\" ] && [ \"$_dir\" != \"/\" ]; do chown agent:$(id -g agent) \"$_dir\" 2>/dev/null || true; _dir=\"$(dirname \"$_dir\")\"; done",
+                vol.guest_path
+            ));
+        }
         volume_commands.push_str(&format!(
             "\nmount -t virtiofs{} {} {}",
             ro_flag, tag, vol.guest_path

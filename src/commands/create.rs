@@ -217,6 +217,19 @@ cat > /home/agent/.ssh/authorized_keys << 'EOF'
 chmod 600 /home/agent/.ssh/authorized_keys
 chown -R agent:{gid} /home/agent/.ssh
 
+# Configure subuid/subgid for rootless containers (e.g. podman)
+echo "==> Configuring subuid/subgid for rootless containers..."
+echo "agent:100000:65536" >> /etc/subuid
+echo "agent:100000:65536" >> /etc/subgid
+
+# Create /dev/net/tun if it doesn't exist (needed by pasta/podman networking)
+echo "==> Ensuring /dev/net/tun is available..."
+mkdir -p /dev/net
+if [ ! -e /dev/net/tun ]; then
+    mknod /dev/net/tun c 10 200
+fi
+chmod 0666 /dev/net/tun
+
 # Allow agent user to use sudo without password
 echo "==> Configuring sudo permissions for 'agent'..."
 echo "agent ALL=(ALL) NOPASSWD: /usr/sbin/reboot" > /etc/sudoers.d/agent-reboot

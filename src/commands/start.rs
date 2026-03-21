@@ -108,6 +108,13 @@ ip route add default via {}
 rm -f /etc/resolv.conf
 echo "nameserver {}" > /etc/resolv.conf
 
+echo "==> Ensuring /dev/net/tun is available..."
+mkdir -p /dev/net
+if [ ! -e /dev/net/tun ]; then
+    mknod /dev/net/tun c 10 200
+fi
+chmod 0666 /dev/net/tun
+
 echo "==> Mounting work directory..."
 mount -t virtiofs work /home/agent/work
 {volume_commands}
